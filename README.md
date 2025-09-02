@@ -55,5 +55,5 @@ This system allows engineers to remotely access microcontroller memory, monitor 
 ## 📌 Getting Started  
 1. Clone the repository:  
    ```bash
-   git clone https://github.com/your-org/charger-debugging-system.git
+   git clone https://github.com/PJDissanayake/FYP_Remote_Live_Debug_System.git
 
