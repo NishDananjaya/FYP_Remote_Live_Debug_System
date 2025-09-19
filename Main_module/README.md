@@ -22,7 +22,7 @@ This application provides a comprehensive interface for:
 ## Project Structure
 
 project/\
-├── main.py # Main application entry point\
+├── gui.py # Main application entry point\
 ├── src/\
 │ ├── server.py # WebSocket server implementation\
 │ └── json_handler.py # JSON message processing utilities\
