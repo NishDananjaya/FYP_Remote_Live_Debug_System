@@ -36,6 +36,7 @@ text
 2. Install required dependencies:
    ```bash
    pip install PyQt5 pyqtgraph websocket-server
+   ```
 
 Usage
 -----
