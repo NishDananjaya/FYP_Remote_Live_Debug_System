@@ -34,7 +34,7 @@ text
 
 1. Ensure you have Python 3.7+ installed
 2. Install required dependencies:
-   ```bash
+   ```python
    pip install PyQt5 pyqtgraph websocket-server
    ```
 
