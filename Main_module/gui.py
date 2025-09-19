@@ -14,6 +14,10 @@ import numpy as np
 
 # Import the modified server class
 from src.server import WebSocketServer
+from src.logger_config import get_module_logger
+
+# Get logger for this module
+logger = get_module_logger("GUI")
 
 class RealTimePlotWidget(pg.PlotWidget):
     def __init__(self, parent=None, title="Real-time Data", y_label="Value"):
@@ -30,10 +34,13 @@ class RealTimePlotWidget(pg.PlotWidget):
         self.data_points = {}  # Store data points by parameter
         self.visible_parameters = set()  # Parameters to show
         
+        logger.debug("RealTimePlotWidget initialized")
+        
     def set_visible_parameters(self, parameters):
         """Set which parameters should be visible on the plot"""
         self.visible_parameters = set(parameters)
         self.update_plot_visibility()
+        logger.debug(f"Visible parameters set to: {parameters}")
         
     def update_plot_visibility(self):
         """Show/hide curves based on visible parameters"""
@@ -44,6 +51,7 @@ class RealTimePlotWidget(pg.PlotWidget):
         # Initialize deque for this parameter if it doesn't exist
         if parameter not in self.data_points:
             self.data_points[parameter] = deque(maxlen=1000)  # Store last 1000 data points
+            logger.debug(f"Created new data series for parameter: {parameter}")
         
         # Add new data point
         self.data_points[parameter].append((value, timestamp))
@@ -63,6 +71,7 @@ class RealTimePlotWidget(pg.PlotWidget):
             self.data_curves[parameter].setVisible(
                 parameter in self.visible_parameters or not self.visible_parameters
             )
+            logger.debug(f"Created new curve for parameter: {parameter}")
         
         # Extract data for this parameter
         times = [point[1] for point in self.data_points[parameter]]
@@ -77,6 +86,8 @@ class DataMonitorGUI(QMainWindow):
     
     def __init__(self):
         super().__init__()
+        
+        logger.info("Initializing DataMonitorGUI")
         
         # Create server instance
         self.server = WebSocketServer()
@@ -97,6 +108,8 @@ class DataMonitorGUI(QMainWindow):
         self.server_thread = threading.Thread(target=self.server.run)
         self.server_thread.daemon = True
         self.server_thread.start()
+        
+        logger.info("DataMonitorGUI initialization complete")
 
         
     def init_ui(self):
@@ -133,6 +146,8 @@ class DataMonitorGUI(QMainWindow):
         
         # Add widgets to main layout
         main_layout.addWidget(self.tab_widget)
+        
+        logger.debug("GUI UI initialized")
         
     def setup_tuning_tab(self):
         layout = QVBoxLayout(self.tuning_tab)
@@ -249,8 +264,12 @@ class DataMonitorGUI(QMainWindow):
         self.write_data_btn.clicked.connect(self.write_data)
         self.refresh_btn.clicked.connect(self.refresh_parameters)
         
+        logger.debug("GUI connections setup complete")
+        
     def refresh_parameters(self):
         """Refresh parameter values by displaying the latest received values"""
+        logger.debug("Refreshing parameter display")
+        
         # Update the parameters display with the latest values
         params_text = ""
         for param, value in self.parameter_values.items():
@@ -266,6 +285,8 @@ class DataMonitorGUI(QMainWindow):
         
     def on_parameter_changed(self, parameter):
         """Handle parameter selection change"""
+        logger.debug(f"Parameter selection changed to: {parameter}")
+        
         if parameter == "All Parameters":
             self.plot_widget.set_visible_parameters([])  # Show all
         else:
@@ -273,6 +294,8 @@ class DataMonitorGUI(QMainWindow):
 
     def on_data_received(self, parameter, value, timestamp):
         # This method will be called by the server when data is received
+        logger.debug(f"Data received in GUI - Parameter: {parameter}, Value: {value}, Timestamp: {timestamp}")
+        
         # Store the parameter value
         if parameter in self.parameter_values:
             self.parameter_values[parameter] = value
@@ -297,6 +320,7 @@ class DataMonitorGUI(QMainWindow):
         self.status_bar.showMessage(message)
         
     def start_monitoring(self):
+        logger.info("GUI requested to start monitoring")
         self.server.start_monitoring()
         self.start_monitoring_btn.setEnabled(False)
         self.stop_monitoring_btn.setEnabled(True)
@@ -304,6 +328,7 @@ class DataMonitorGUI(QMainWindow):
         self.log_text.append("Monitoring started")
         
     def stop_monitoring(self):
+        logger.info("GUI requested to stop monitoring")
         self.server.stop_monitoring()
         self.start_monitoring_btn.setEnabled(True)
         self.stop_monitoring_btn.setEnabled(False)
@@ -312,9 +337,12 @@ class DataMonitorGUI(QMainWindow):
         
     def write_data(self):
         """Send DOWNLOAD command with the specified bytes"""
+        logger.info("GUI requested to write data")
+        
         try:
             # Get the bytes from spinboxes
             data_bytes = [spinbox.value() for spinbox in self.byte_spinboxes]
+            logger.debug(f"Data bytes from GUI: {data_bytes}")
             
             # Use server's write_data_gui method (which handles the complete sequence)
             success = self.server.write_data_gui(data_bytes)
@@ -322,25 +350,41 @@ class DataMonitorGUI(QMainWindow):
             if success:
                 self.log_text.append(f"Write operation completed with bytes: {data_bytes}")
                 self.update_status(f"Data written: {data_bytes}")
+                logger.info(f"Write operation successful: {data_bytes}")
             else:
                 self.log_text.append("Error: Failed to complete write operation")
+                logger.error("Write operation failed")
                 
         except Exception as e:
-            self.log_text.append(f"Error sending write command: {e}")
+            error_msg = f"Error sending write command: {e}"
+            self.log_text.append(error_msg)
+            logger.error(error_msg)
+            logger.exception("Full exception details:")
 
     def closeEvent(self, event):
         # Clean up when closing the application
+        logger.info("Application closing, performing cleanup")
+        
         self.server.stop_monitoring()
         if hasattr(self.server, 'server'):
             self.server.server.shutdown()
+            
+        logger.info("Application cleanup complete")
         event.accept()
 
 def main():
+    # Import logger config to initialize logging
+    from src.logger_config import logger
+    
     app = QApplication(sys.argv)
     app.setStyle('Fusion')  # Modern style
     
+    logger.info("Starting GUI application")
+    
     gui = DataMonitorGUI()
     gui.show()
+    
+    logger.info("GUI application started successfully")
     
     sys.exit(app.exec_())
 
