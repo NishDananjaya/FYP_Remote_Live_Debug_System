@@ -22,7 +22,7 @@ This application provides a comprehensive interface for:
 ## Project Structure
 
 project/\
-├── main.py # Main application entry point\
+├── gui.py # Main application entry point\
 ├── src/\
 │ ├── server.py # WebSocket server implementation\
 │ └── json_handler.py # JSON message processing utilities\
@@ -34,8 +34,9 @@ text
 
 1. Ensure you have Python 3.7+ installed
 2. Install required dependencies:
-   ```bash
+   ```python
    pip install PyQt5 pyqtgraph websocket-server
+   ```
 
 Usage
 -----
