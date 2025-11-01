@@ -73,15 +73,25 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+	uint32_t lcg_rand(uint32_t *seed) {
+	    *seed = *seed * 1103515245U + 12345U;
+	    return (*seed >> 16) & 0xFFU;
+	}
+
 	debug_arr[0]=0x01;
 	debug_arr[1]=0x02;
 	debug_arr[2]=0x03;
 	debug_arr[3]=0x04;
 
+	uint32_t seed = 0x12345678U;
+
 	arr_1[0]=1;
-	arr_1[0]=2;
-	arr_1[0]=3;
-	arr_1[0]=4;
+	arr_1[1]=2;
+	arr_1[2]=3;
+	arr_1[3]=4;
+	arr_1[4]=5;
+	arr_1[5]=6;
+
 
 	my_var=11;
   /* USER CODE END 1 */
@@ -130,6 +140,10 @@ int main(void)
 	  	  	  HAL_Delay(50);
 	  	  	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
 	  	  	  HAL_Delay(50);
+
+	  	  	for (int i = 0; i < 4; i++) {
+	  	  	        debug_arr[i] = (uint8_t)lcg_rand(&seed);
+	  	  	    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

@@ -50,8 +50,8 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
     if (hspi == &hspi1)
     {
-
         HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);
+        //for (volatile int i = 0; i < 1000; i++);
         XCP_CommandHandler(rxBuffer, txBuffer);
         memset(rxBuffer, 0, SPI_BUFFER_SIZE);
         HAL_SPI_TransmitReceive_DMA(&hspi1, txBuffer, rxBuffer, SPI_BUFFER_SIZE);

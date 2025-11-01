@@ -11,8 +11,6 @@ Created: May 20, 2025
 #include "spi.h"
 #include "xcp.h"
 
-extern uint8_t rxBuffer[];
-extern uint8_t txBuffer[];
 
 volatile uint32_t mta_address = 0;
 volatile uint8_t mta_extension = 0;
@@ -27,7 +25,7 @@ bool ValidateAddress(uint32_t addr) {
 }
 
 void XCP_Connect(uint8_t *cmd, uint8_t *res) {
-    memset(res, 0, XCP_MAX_DTO);  // Clear entire buffer
+    memset(res, 0, XCP_MAX_DTO);
     res[0] = XCP_PID_RES;
     res[1] = 0x20;  // Resource: Calibration + Page Switching
     res[2] = XCP_MAX_CTO;
@@ -108,7 +106,7 @@ void XCP_CommandHandler(uint8_t *cmd, uint8_t *res) {
 
     uint8_t pid = cmd[0];
     if (pid == 0xAA) {
-        return;
+        return;  //Dummy Data
     }
 
     switch (pid) {
@@ -126,6 +124,3 @@ void XCP_CommandHandler(uint8_t *cmd, uint8_t *res) {
     }
 
 }
-
-
-
