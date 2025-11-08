@@ -1,189 +1,139 @@
-# WebSocket Server Data Monitor
+# WebSocket Device Monitor & OTA Manager  
+### *Real-Time Memory Inspection, Dynamic Tuning & Secure Firmware Updates*
 
-A PyQt5-based graphical user interface for real-time data monitoring and device control through WebSocket communication.
+[![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/downloads/) [![PyQt5](https://img.shields.io/badge/GUI-PyQt5-green)](https://www.riverbankcomputing.com/software/pyqt/) [![WebSocket](https://img.shields.io/badge/Protocol-WebSocket-orange)](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) [![OTA Ready](https://img.shields.io/badge/OTA-Ready-brightgreen)](#) [![ELF Parser](https://img.shields.io/badge/ELF-pyelftools-purple)](#)
 
-## Overview
+---
 
-This application provides a comprehensive interface for:
-- Real-time data monitoring and visualization
-- Device parameter tuning
-- Over-the-air (OTA) updates
-- WebSocket-based communication with connected devices
+**A full-stack embedded debugging and deployment suite** — monitor live variables, write to memory on-the-fly, and push firmware updates over WebSocket. Built for developers working with STM32, ESP32, or any MCU with WebSocket/XCP-like capabilities.
 
-## Features
+---
 
-- **Real-time Plotting**: Dynamic graphs showing parameter values over time
-- **Multiple Parameter Monitoring**: Track voltage, current, and active ports simultaneously
-- **Interactive Controls**: Start/stop monitoring and parameter selection
-- **Data Logging**: Timestamped event log for all received data
-- **Device Communication**: Send commands and write data to connected devices
-- **Tabbed Interface**: Organized into Tuning, Monitoring, and OTA sections
+## Core Capabilities
+
+- **Live Memory Monitoring** – Poll scalar/array variables at 100+ Hz  
+- **Instant Write Access** – Modify RAM values directly from GUI  
+- **OTA Firmware Flashing** – Chunked, verified, resumable updates  
+- **ELF to CSV Auto-Mapping** – Extract symbols & generate memory maps  
+- **Multi-Client WebSocket Server** – Thread-safe, JSON-based protocol  
+- **Interactive PyQt5 Dashboard** – Plots, tables, logs, and export tools  
+
+---
+
+## Technologies
+
+| Layer               | Technology                                  |
+|---------------------|---------------------------------------------|
+| **Language**        | Python 3.8+                                 |
+| **GUI**             | PyQt5 + pyqtgraph (live plotting)           |
+| **Networking**      | `websocket-server` (async-ready)            |
+| **ELF Parsing**     | `pyelftools` (DWARF introspection)          |
+| **Data Handling**   | `pandas`, `numpy`, `csv`                    |
+| **Logging**         | Custom colored + rotating file logger       |
+| **Threading**       | `threading`, `concurrent.futures`, `queue`  |
+| **File System**     | `pathlib` (modern path handling)            |
+
+---
 
 ## Project Structure
 
-project/\
-├── gui.py # Main application entry point\
-├── src/\
-│ ├── server.py # WebSocket server implementation\
-│ └── json_handler.py # JSON message processing utilities\
-└── [README.md](https://readme.md/) # This file
+```
+.
+├── main.py                  # Launch GUI
+├── src/
+│   ├── server.py            # WebSocket server + protocol engine
+│   ├── gui.py               # Full PyQt5 interface (tabs, graphs, OTA)
+│   ├── json_handler.py      # JSON command/response parser
+│   ├── ota_handler.py       # Firmware transfer & verification logic
+│   ├── mem_map_byelf.py     # .elf → .csv variable extractor
+│   ├── logger_config.py     # Colorful + rotating logs
+│   └── testpath.py          # Path verification tool
+├── data/elf/                # Input firmware binaries
+├── data/csv/                # Generated memory maps
+├── logs/                    # Auto-rotating log files
+```
 
-text
+---
 
-## Installation
+## Quick Start
 
-1. Ensure you have Python 3.7+ installed
-2. Install required dependencies:
-   ```python
-   pip install PyQt5 pyqtgraph websocket-server
-   ```
+```bash
+git clone https://github.com/yourusername/websocket-device-monitor.git
+cd websocket-device-monitor
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+```
 
-Usage
------
+### 1. Generate Memory Map
+```bash
+python src/mem_map_byelf.py
+# → data/csv/XCP_slave_disco_*.csv
+```
 
-1.  Run the application:
+### 2. Launch Application
+```bash
+python main.py
+```
 
-    bash
+---
 
-    python main.py
-
-2.  The WebSocket server will start on port 8000
-
-3.  Connect your device to the WebSocket server
-
-4.  Use the interface tabs:
-
-    -   Tuning: Refresh parameters and write data to devices
-
-    -   Monitoring: View real-time data plots and event logs
-
-    -   OTA Updates: Placeholder for future firmware update functionality
-
-Key Components
---------------
-
-### Main Application (`main.py`)
-
-The primary GUI application built with PyQt5 that includes:
-
--   Real-time plotting with `RealTimePlotWidget`
-
--   Tabbed interface for different functionalities
-
--   Status bar and logging system
-
--   Connection management to the WebSocket server
-
-### WebSocket Server (`src/server.py`)
-
-Handles client connections and message processing:
-
--   Manages multiple client connections
-
--   Processes incoming JSON messages
-
--   Implements monitoring loop for periodic data requests
-
--   Provides data writing functionality
-
-### JSON Handler (`src/json_handler.py`)
-
-Processes JSON messages with support for:
-
--   Response messages (command acknowledgments)
-
--   Data messages (parameter values)
-
--   Command creation (SET_MTA, UPLOAD, DOWNLOAD)
-
-Communication Protocol
-----------------------
-
-The application uses a JSON-based protocol:
-
-### Command Format
+## JSON Protocol (Device ↔ Server)
 
 ```json
+// Initialize debug session
+{"cmd": "init", "con_id": "01"}
 
-{
-  "type": "command",
-  "command_id": "unique_id",
-  "command": {
-    "name": "COMMAND_NAME",
-    "bytes": [byte1, byte2, ...]
-  }
-}
+// Read 32-bit value
+{"cmd": "mem_read", "add": "0x20000100", "size": "32"}
+
+// Write value (auto-converted to binary)
+{"cmd": "mem_write", "add": "0x20000100", "size": "32", "data": "0b00000000000000000000000000001010"}
+
+// Terminate session
+{"cmd": "end", "con_id": "01"}
 ```
-### Response Format
 
+**Responses**:
 ```json
-
-{
-  "type": "response",
-  "command_id": "matching_id",
-  "status": "success/error",
-  "message": "description"
-}
+{"res": "mem_read", "add": "0x20000100", "value": "42"}
+{"res": "mem_write", "state": "success"}
 ```
-### Data Format
 
-```json
+---
 
-{
-  "type": "data",
-  "parameter": "parameter_name",
-  "value": 123.45,
-  "timestamp": 1640995200.0
-}
+## GUI Highlights
+
+- **Monitoring Tab** – Live plots + editable table  
+- **OTA Tab** – Select `.bin`, view progress, cancel anytime  
+- **Log Console** – Real-time, filterable, color-coded  
+- **Export** – CSV or Excel with timestamps  
+
+---
+
+## Development & Contribution
+
+```bash
+# Run tests
+python -m unittest discover
+
+# Add feature → test → PR
 ```
-Supported Commands
-------------------
 
-1.  SET_MTA: Set memory transfer address
+We welcome:
+- New data type support (`float`, `double`, structs)
+- Protocol extensions (streaming, events)
+- GUI themes & accessibility
+- Dockerization
 
-2.  UPLOAD: Request data from device (voltage, current, ports)
+---
 
-3.  DOWNLOAD: Write data to device
+## Debugging
 
-Customization
--------------
+- Logs: `logs/WebSocketServer_*.log`
+- Enable debug: Edit `logger_config.py` → `log_level=logging.DEBUG`
+- Path issues? Run `python src/testpath.py`
 
-### Adding New Parameters
+---
 
-1.  Update `parameter_values` in the `DataMonitorGUI` class
-
-2.  Add the parameter to the combo box in `setup_monitoring_tab()`
-
-3.  Extend the monitoring loop in `server.py` to request the new parameter
-
-### Modifying Plot Appearance
-
-Adjust the `RealTimePlotWidget` class to:
-
--   Change colors and styles
-
--   Modify data retention (currently 1000 points)
-
--   Adjust grid and legend settings
-
-Troubleshooting
----------------
-
-1.  No data received: Check device connection to WebSocket server
-
-2.  Plot not updating: Verify monitoring is started
-
-3.  Write operations failing: Confirm device is properly connected and responsive
-
-Future Enhancements
--------------------
-
--   OTA firmware update implementation
-
--   Additional parameter support
-
--   Export functionality for logged data
-
--   Customizable plot layouts
-
--   Authentication for WebSocket connectionss
+**Precision control for embedded systems — monitor, tune, update, repeat.**  
+*No JTAG. No serial. Just WebSocket magic.*
